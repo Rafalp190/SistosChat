@@ -100,8 +100,14 @@ void* server(void* sock)
 	}
 	char line[150];
 	char changeStr[256];
+	char userInfo[256];
+	char messageBuffer[1024];
 	char ** tokens = NULL;
-	char * p = strtok(protclstr, "|");
+	char * p = strtok(protclstr , "|");
+	
+	int len = strlen(protclstr);
+	if (len > 0 && buffer[len-1] == '\n')
+		buffer[len-1] = 0;
 	
 	int n_spaces = 0, i;
 	while (p) {
@@ -110,6 +116,7 @@ void* server(void* sock)
 			exit(-1);
 		
 		tokens[n_spaces-1] = p;
+		
 		p = strtok(NULL, "|");
 	}
 		
@@ -229,13 +236,6 @@ void* server(void* sock)
 			}
 			
 			if (strncmp( tok[0], tokens[1], sizeof(tokens[1]-2))== 0) {
-				
-				puts(tok[0]);
-				puts(tok[1]);
-				puts(tok[2]);
-				puts(tok[3]);
-				puts(tokens[2]);
-				
 				snprintf(changeStr, sizeof(changeStr), "%s|%s|%s|%s|%s", tok[0],tok[1], tok[2], tok[3], tokens[2]);
 				fputs(changeStr, tmpfp); 
 				
@@ -257,15 +257,72 @@ void* server(void* sock)
 		int k;
 		char *userDeInfo = tokens[1];
 		char *username = tokens[2];
+		fp = fopen("user.txt", "r+");
+		while (fgets(line, sizeof(line), fp)) {
+			char ** tok = NULL;
+			char * p = strtok(line, "|");
+			int n_spaces = 0, i;
+			while (p) {
+				tok = realloc(tok , sizeof(char*) * ++n_spaces);
+				if (tok == NULL)
+					exit(-1);
+		
+				tok[n_spaces-1] = p;
+				p = strtok(NULL, "|");
+			}
+			
+			if (strncmp( tok[0], tokens[1], sizeof(tokens[1]-2))== 0) {
+			
+				bzero(userInfo, 256);
+				snprintf(userInfo, sizeof(userInfo), "05|%s|%s|%s|%s", tok[0],tok[1], tok[2], tok[4]);
+				
+				send(newsockfd, userInfo, 255, 0);
+				pthread_mutex_unlock(&mutex);
+				fclose(fp);
+				free(tok);
+				goto checking;
+				
+			} else {
+				puts("usuario no existe");
+			}
+		free(tok);
+		}
+		
+		fclose(fp);
+		pthread_mutex_unlock(&mutex);
+		goto checking;
 		
 	} else if ( strcmp(tokens[0],"06") == 0) {
 		//Logica de solicitud de listado de usuarios
 		int k;
 		char newBuffer[1024];
-		char *username = tokens[1];
+	
 		bzero(newBuffer, 1024);
-		snprintf(newBuffer, sizeof(newBuffer), "07|%s|", username);
+		snprintf(newBuffer, sizeof(newBuffer), "07|%s|", tokens[1]);
+
+		fp = fopen("user.txt", "r+");
+		while (fgets(line, sizeof(line), fp)) {
+			char ** tok = NULL;
+			char * p = strtok(line, "|");
+			int n_spaces = 0, i;
+			while (p) {
+				tok = realloc(tok , sizeof(char*) * ++n_spaces);
+				if (tok == NULL)
+					exit(-1);
 		
+				tok[n_spaces-1] = p;
+				p = strtok(NULL, "|");
+			}
+			strncat(newBuffer, tok[0], sizeof(newBuffer));
+			strncat(newBuffer, "+", sizeof(newBuffer));
+			strncat(newBuffer, tok[4] - strlen(tok[4]) - 1,  sizeof(newBuffer));
+			strncat(newBuffer, "&", sizeof(newBuffer));
+			
+		}
+		
+		send(newsockfd, newBuffer, 1023, 0);
+		fclose(fp);
+		pthread_mutex_unlock(&mutex);
 		goto checking;
 	} else if ( strcmp(tokens[0],"08") == 0) {
 		//Logica de envio de mensajes 
@@ -274,13 +331,37 @@ void* server(void* sock)
 		char *message = tokens[3];
 		int targetsockfd, k;
 		
-		bzero(buffer, 256);
-
-		n=recv(newsockfd, buffer, 255,0);
-		if (n<0){
-			error("ERROR! Leyendo del Socket");
-			goto END;
+		bzero(messageBuffer, 1024);
+		fp = fopen("user.txt", "r+");
+		while (fgets(line, sizeof(line), fp)) {
+			char ** tok = NULL;
+			char * p = strtok(line, "|");
+			int n_spaces = 0, i;
+			while (p) {
+				tok = realloc(tok , sizeof(char*) * ++n_spaces);
+				if (tok == NULL)
+					exit(-1);
+		
+				tok[n_spaces-1] = p;
+				p = strtok(NULL, "|");
+			}
+			if (strncmp( tok[0], tokens[2], sizeof(tokens[2]-2))== 0) {
+				targetsockfd = atoi(tok[3]);
+				snprintf(messageBuffer, sizeof(messageBuffer), "08|%s|%s|%s", username, target, message);
+				send(targetsockfd, messageBuffer, 1023, 0);
+				pthread_mutex_unlock(&mutex);
+				fclose(fp);
+				free(tok);
+				goto checking;
+				
+			} 
+		free(tok);	
 		}
+		puts("Usuario no existe");
+		fclose(fp);
+		pthread_mutex_unlock(&mutex);
+		goto checking;
+		
 			
 	} else {
 		puts("WTF you didnt respect the protocol dickhead");
