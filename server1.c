@@ -92,8 +92,8 @@ void* server(void* sock)
 	
 	checking:
 	puts("checking");
-	bzero(protclstr,150);
-	socktest = recv(newsockfd, protclstr, 149, 0);
+	bzero(protclstr,256);
+	socktest = recv(newsockfd, protclstr, 255, 0);
 	
 	if (socktest < 0) {
 		puts("ERROR! Fallo al recibir el mensaje");
