@@ -298,6 +298,7 @@ void* server(void* sock)
 		char newBuffer[1024];
 	
 		bzero(newBuffer, 1024);
+		
 		snprintf(newBuffer, sizeof(newBuffer), "07|%s|", tokens[1]);
 
 		fp = fopen("user.txt", "r+");
@@ -315,11 +316,12 @@ void* server(void* sock)
 			}
 			strncat(newBuffer, tok[0], sizeof(newBuffer));
 			strncat(newBuffer, "+", sizeof(newBuffer));
-			strncat(newBuffer, tok[4] - strlen(tok[4]) - 1,  sizeof(newBuffer));
+			strncat(newBuffer, tok[4],  sizeof(newBuffer));
 			strncat(newBuffer, "&", sizeof(newBuffer));
 			
 		}
-		
+				
+				
 		send(newsockfd, newBuffer, 1023, 0);
 		fclose(fp);
 		pthread_mutex_unlock(&mutex);
