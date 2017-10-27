@@ -16,6 +16,20 @@ void error (char *msg){
 		puts(msg);
 		exit(0);
 	}
+
+char * readText(void){
+	char *msgBuffer;
+	size_t bufsize = 32;
+	size_t characters;
+	
+	msgBuffer =(char*)malloc(bufsize * sizeof(char));
+	if(msgBuffer ==NULL){
+		error("Unable to allocate buffer");
+		}
+		printf("");
+		characters = getline(&msgBuffer,&bufsize,stdin);
+		return(msgBuffer);
+	}
 	
 void* receive(void* d){
 		int sockfd=*((int *)d);
@@ -149,10 +163,10 @@ int main(int argc, char *argv[]){
 	
 	else{
 		bzero(buffer,256);
-		snprintf(buffer,sizeof(buffer),"00|%s|%s|%s|0",username,serverIP,clientPort);
-		send(sockfd,buffer,255,0);
+		snprintf(buffer,sizeof(buffer),"00|%s|%s|%s|0\n",username,serverIP,clientPort);
 		char a1[50];
 		pthread_create(&thread,NULL,receive,(void*)&sockfd);
+		send(sockfd,buffer,255,0);
 	while(1){
 	
 	printf("\n%s\n","Hola, selecciona una opcion");
@@ -187,7 +201,7 @@ int main(int argc, char *argv[]){
 				
 			}
 			else{
-				printf("You've fucked up, motherfucker!\n");
+				printf("Elige un estado entre 0-2\n");
 				}
 			}
 		else if (strcmp(a1,"2")==0){		//user info
@@ -207,68 +221,22 @@ int main(int argc, char *argv[]){
 			bzero(buffer,256);
 			bzero(uinfobuff,1024);
 			snprintf(buffer,sizeof(buffer),"06|%s",username);
-			send(sockfd,buffer,255,0);
-			/*
-			recv(sockfd,uinfobuff,1024,0);
-			//puts(uinfobuff);
-			char * p = strtok(uinfobuff, "|");
-			while (p) {
-				tok = realloc(tok , sizeof(char*) * ++n_spaces);
-				if (tok == NULL)
-					exit(-1);
-		
-				tok[n_spaces-1] = p;
-				p = strtok(NULL, "|");
-			}
-
-			char * q = strtok(tok[2],"&");
-			n_spaces = 0;
-			while (q) {
-				tok = realloc(tok , sizeof(char*) * ++n_spaces);
-				if (tok == NULL)
-					exit(-1);
-		
-				tok[n_spaces-1] = q;
-				q = strtok(NULL, "&");
-				n++;
-			}
-			
-			
-			//printf("tamano%d\n",n);
-			
-			while(j<n){
-				tokind = NULL;
-				char *r = strtok(tok[j],"+");
-				n_spaces = 0;
-					while (r) {
-					tokind = realloc(tokind , sizeof(char*) * ++n_spaces);
-					if (tokind == NULL)
-						exit(-1);
-			
-					tokind[n_spaces-1] = r;
-					r = strtok(NULL, "+");
-					}
-					char status[10];
-					if (strcmp(tokind[1],"0")==0) strncpy(status,"Activo",10);
-					else if(strcmp(tok[1],"1")==0) strncpy(status,"Idle",10);
-					else strncpy(status,"Away",10);
-					printf("El usuario %s se encuentra %s\n", tokind[0],status);
-					j++;
-					
-				}
-				*/
-				
+			send(sockfd,buffer,255,0);				
 			}
 		else if (strcmp(a1,"4")==0){		//send msg
-			char a4[50], a5[255];
+			char a4[50], a5[256];
+			
+			
 			printf("Ingrese el nombre del usuario al que desea enviarle un mensaje\n");
 			scanf("%s", &a4);
+			
 			printf("Ingrese el mensaje que desea enviar. Un maximo de 255 caracteres\n");
 			scanf("%s", &a5);
-			printf("Enviaste esta mamada:\n%s", a5);
 			bzero(buffer,256);
 			snprintf(buffer,sizeof(buffer),"08|%s|%s|%s",username,a4,a5);
 			send(sockfd,buffer,255,0);
+			
+			
 			}
 		else if (strcmp(a1,"5")==0){		//gtfo
 			bzero(buffer,256);
@@ -277,8 +245,8 @@ int main(int argc, char *argv[]){
 			puts("baibai");
 			break;
 			}
-		else{								//mula...
-			printf("You've gone and fucked it, asshole!");
+		else{								//opcion incorrecta
+			printf("Ingrese una opcion entre 1-5");
 			}
 	}		
 	}
